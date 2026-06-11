@@ -176,16 +176,6 @@ class Logger: ObservableObject {
         }
     }
 
-    func updateLastLog(_ message: String) {
-        DispatchQueue.main.async {
-            if let lastIndex = self.logs.indices.last {
-                self.logs[lastIndex] = message
-            } else {
-                self.logs.append(message)
-            }
-        }
-    }
-    
     func clear() {
         DispatchQueue.main.async {
             self.logs.removeAll()
