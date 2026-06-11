@@ -37,9 +37,9 @@ jobs:
           -scheme KernelPanel \
           -configuration Release \
           -sdk iphoneos \
-          -arch arm64e \
           -archivePath build/KernelPanel.xcarchive \
           -destination "generic/platform=iOS" \
+          ARCHS=arm64e \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
