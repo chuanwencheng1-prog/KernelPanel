@@ -67,6 +67,34 @@ struct ContentView: View {
             }
             addLog("面板初始化完成，请先输入卡密激活")
         }
+        .onChange(of: mgr.vfsready) { ready in
+            if ready && mgr.sbxready && !initDone {
+                addLog("内核初始化全部完成")
+                initDone = true
+                checkUnlock()
+            } else if ready && !initDone {
+                addLog("VFS 初始化完成")
+            }
+        }
+        .onChange(of: mgr.sbxready) { ready in
+            if ready && mgr.vfsready && !initDone {
+                addLog("内核初始化全部完成")
+                initDone = true
+                checkUnlock()
+            } else if ready && !initDone {
+                addLog("沙盒逃逸完成")
+            }
+        }
+        .onChange(of: mgr.vfsfailed) { failed in
+            if failed {
+                addLog("VFS 初始化失败")
+            }
+        }
+        .onChange(of: mgr.sbxfailed) { failed in
+            if failed {
+                addLog("沙盒逃逸失败")
+            }
+        }
     }
     
     // MARK: - Header Card
@@ -154,7 +182,7 @@ struct ContentView: View {
                     .foregroundColor(initButtonForeground)
                     .cornerRadius(14)
                 }
-                .disabled(!isActivated || !mgr.dsready || mgr.vfsrunning || mgr.sbxrunning || initDone)
+                .disabled(!isActivated || !mgr.dsready || !mgr.hasOffsets || mgr.vfsrunning || mgr.sbxrunning || initDone)
                 .buttonStyle(ScaleButtonStyle())
                 .scaleEffect(btnInitVisible ? 1 : 0.2)
                 .opacity(btnInitVisible ? 1 : 0)
@@ -393,31 +421,9 @@ struct ContentView: View {
             addLog("内核参数恢复默认值")
         }
         
-        // Run VFS init + Sandbox escape
-        mgr.vfsinit { vfsSuccess in
-            if vfsSuccess {
-                mgr.sbxescape { sbxSuccess in
-                    if sbxSuccess {
-                        addLog("内核初始化全部完成")
-                        initDone = true
-                        checkUnlock()
-                    } else {
-                        addLog("沙盒逃逸失败")
-                    }
-                }
-            } else {
-                // Try sandbox escape alone
-                mgr.sbxescape { sbxSuccess in
-                    if sbxSuccess {
-                        addLog("内核初始化全部完成")
-                        initDone = true
-                        checkUnlock()
-                    } else {
-                        addLog("内核初始化失败")
-                    }
-                }
-            }
-        }
+        // Run VFS init and Sandbox escape in PARALLEL (same as original logic)
+        mgr.vfsinit()
+        mgr.sbxescape()
     }
     
     private func startAction() {
