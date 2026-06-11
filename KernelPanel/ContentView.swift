@@ -48,7 +48,7 @@ struct ContentView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("未找到偏移量!")
                             .font(.headline)
-                        Text("内核缓存偏移量缺失。请点击"运行漏洞利用"然后获取偏移量。")
+                        Text("内核缓存偏移量缺失。请点击「运行漏洞利用」然后获取偏移量。")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
