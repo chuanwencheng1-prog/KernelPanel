@@ -8,10 +8,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-enum taboptions {
-    case applying, tweaks, files, logs
-}
-
 let g_isunsupported: Bool = isunsupported()
 var weonadebugbuild_pjbweouttahereexclamationmark: Bool = false
 
@@ -22,9 +18,6 @@ struct lara: App {
     @Environment(\.scenePhase) var scenephase
     @AppStorage("selectedMethod") private var selectedMethod: method = .hybrid
     @AppStorage("keepAlive") private var keepalive: Bool = false
-    @AppStorage("showFMInTabs") private var showfmintabs: Bool = true
-    @AppStorage("logsdisplaymode") private var logsdisplaymode: logsdisplaymode = .toolbar
-    @State private var selectedtab: taboptions = .applying
     
     init() {
         #if DEBUG
@@ -45,74 +38,34 @@ struct lara: App {
     
     var body: some Scene {
         WindowGroup {
-            TabView(selection: $selectedtab) {
-                ContentView()
-                    .tabItem {
-                        Image(systemName: "wrench.and.screwdriver.fill")
+            ContentView()
+                .environmentObject(mgr)
+                .overlay {
+                    if mgr.showrespring {
+                        respringview()
+                            .brightness(-1.0)
+                            .ignoresSafeArea()
                     }
-                    .tag(taboptions.applying)
-                
-                // this has gotta fucking go
-                TweaksView(mgr: mgr)
-                    .tabItem {
-                        Image(systemName: "ant.fill")
+                }
+                .sheet(isPresented: $iconthememgr.showFixupSheet) {
+                    IconThemeFixupView()
+                }
+                .onAppear {
+                    if !isunsupported() {
+                        init_offsets()
+                        offsets_init()
+                        iconthememgr.startPendingFixupIfPossible()
+                        mgr.hasOffsets = emergencyfixfunctiontobereplacedlateronquestionmark()
+                    } else {
+                        Alertinator.shared.alert(title: "This device is not supported!", body: "We apologize, but this device is currently not supported by Lara. Possible reasons: \n- You are on an unsupported iOS version (Supported: iOS 16.0 - iOS 18.7.1, iOS 26.0 - iOS 26.0.1) \n- Your device has MIE (A19+ or M5+) \n- A debugger is attached.", actionLabel: "Exit App", action: { exitinator() })
                     }
-                    .tag(taboptions.tweaks)
-                
-                
-                // i'm gonna strangle you root (the weight of your actions will crush you)
-                if showfmintabs {
-                    SantanderView(startPath: "/")
-                        .tabItem {
-                            Image(systemName: "folder.fill")
-                        }
-                        .tag(taboptions.files)
                 }
-                
-                // this too
-                if logsdisplaymode == .tabs {
-                    LogsView(logger: globallogger)
-                        .tabItem {
-                            Image(systemName: "terminal")
-                        }
-                        .tag(taboptions.logs)
+                .onChange(of: scenephase, perform: handleScenePhase)
+                .onChange(of: mgr.sbxready) { ready in
+                    if ready {
+                        iconthememgr.startPendingFixupIfPossible()
+                    }
                 }
-            }
-            .environmentObject(mgr)
-            .overlay {
-                if mgr.showrespring {
-                    respringview()
-                        .brightness(-1.0)
-                        .ignoresSafeArea()
-                }
-            }
-            .sheet(isPresented: Binding(
-                get: { logsdisplaymode == .toolbar && mgr.showLogs },
-                set: { mgr.showLogs = $0 }
-            )) {
-                LogsView(logger: globallogger)
-            }
-            .sheet(isPresented: $iconthememgr.showFixupSheet) {
-                IconThemeFixupView()
-            }
-            .onAppear {
-                if !isunsupported() {
-                    init_offsets()
-                    offsets_init()
-                    iconthememgr.startPendingFixupIfPossible()
-                    // beautiful name root
-                    // thanks
-                    mgr.hasOffsets = emergencyfixfunctiontobereplacedlateronquestionmark()
-                } else {
-                    Alertinator.shared.alert(title: "This device is not supported!", body: "We apologize, but this device is currently not supported by Lara. Possible reasons: \n- You are on an unsupported iOS version (Supported: iOS 16.0 - iOS 18.7.1, iOS 26.0 - iOS 26.0.1) \n- Your device has MIE (A19+ or M5+) \n- A debugger is attached.", actionLabel: "Exit App", action: { exitinator() })
-                }
-            }
-            .onChange(of: scenephase, perform: handleScenePhase)
-            .onChange(of: mgr.sbxready) { ready in
-                if ready {
-                    iconthememgr.startPendingFixupIfPossible()
-                }
-            }
         }
     }
     
