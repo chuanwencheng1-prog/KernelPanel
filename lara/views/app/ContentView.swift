@@ -68,21 +68,22 @@ struct ContentView: View {
             addLog("面板初始化完成，请先输入卡密激活")
         }
         .onChange(of: mgr.vfsready) { ready in
-            if ready && mgr.sbxready && !initDone {
-                addLog("内核初始化全部完成")
-                initDone = true
-                checkUnlock()
-            } else if ready && !initDone {
+            if ready && !initDone {
                 addLog("VFS 初始化完成")
+                // VFS成功即可解锁功能（原版逻辑：VFS是核心，SBX是额外加成）
+                if !mgr.sbxrunning {
+                    initDone = true
+                    checkUnlock()
+                }
             }
         }
         .onChange(of: mgr.sbxready) { ready in
-            if ready && mgr.vfsready && !initDone {
-                addLog("内核初始化全部完成")
-                initDone = true
-                checkUnlock()
-            } else if ready && !initDone {
+            if ready && !initDone {
                 addLog("沙盒逃逸完成")
+                if mgr.vfsready {
+                    initDone = true
+                    checkUnlock()
+                }
             }
         }
         .onChange(of: mgr.vfsfailed) { failed in
@@ -92,7 +93,19 @@ struct ContentView: View {
         }
         .onChange(of: mgr.sbxfailed) { failed in
             if failed {
-                addLog("沙盒逃逸失败")
+                addLog("沙盒逃逸失败（不影响核心功能）")
+                // SBX失败不影响VFS功能，如果VFS已就绪则仍可解锁
+                if mgr.vfsready && !initDone {
+                    initDone = true
+                    checkUnlock()
+                }
+            }
+        }
+        .onChange(of: mgr.sbxrunning) { running in
+            // 当sbx停止运行且vfs已就绪时，解锁功能
+            if !running && mgr.vfsready && !initDone {
+                initDone = true
+                checkUnlock()
             }
         }
     }
@@ -257,17 +270,34 @@ struct ContentView: View {
     // MARK: - Log Container
     private var logContainer: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Log title with animated divider
-            VStack(alignment: .leading, spacing: 0) {
+            // Log title with copy button and animated divider
+            HStack {
                 Text("运行日志")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(Color(red: 0.173, green: 0.173, blue: 0.18))
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
                 
-                AnimatedDivider()
-                    .padding(.horizontal, 20)
+                Spacer()
+                
+                Button(action: copyLogs) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 12))
+                        Text("复制")
+                            .font(.system(size: 12))
+                    }
+                    .foregroundColor(Color(red: 0.204, green: 0.78, blue: 0.349))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color(red: 0.941, green: 0.969, blue: 0.941))
+                    .cornerRadius(8)
+                }
+                .buttonStyle(ScaleButtonStyle())
             }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            
+            AnimatedDivider()
+                .padding(.horizontal, 20)
             
             // Log content
             ScrollViewReader { proxy in
